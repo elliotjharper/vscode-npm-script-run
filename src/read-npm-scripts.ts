@@ -1,25 +1,24 @@
 import * as vscode from 'vscode';
 
-//const fs = require('fs');
-//const packageJsonUri = vscode.Uri.parse('./package.json');
-
 interface IPackageFileWithScripts {
     scripts: Record<string, string>;
 }
 
 async function readPackageJson(): Promise<IPackageFileWithScripts> {
-    const rootFolderUri = vscode.workspace.workspaceFolders?.[0]?.uri;
-    if (!rootFolderUri) {
+    const workspaceRootUri = vscode.workspace.workspaceFolders?.[0]?.uri;
+    if (!workspaceRootUri) {
         throw new Error('folder needed!');
     }
-    //const relativeFileUri = vscode.Uri.file('package.json');
-    const fullFileUri = vscode.Uri.joinPath(rootFolderUri, './package.json');
 
-    //const packageJsonUri = vscode.workspace.asRelativePath('/package.json');
-    const textDoc = await vscode.workspace.openTextDocument(fullFileUri);
-    const fileContents = textDoc.getText();
+    const workspacePackageJsonUri = vscode.Uri.joinPath(workspaceRootUri, './package.json');
 
-    return JSON.parse(fileContents);
+    const packageJsonTextDocument = await vscode.workspace.openTextDocument(
+        workspacePackageJsonUri
+    );
+
+    const packageJsonTextContents = packageJsonTextDocument.getText();
+
+    return JSON.parse(packageJsonTextContents);
 }
 
 export async function readNpmScripts(): Promise<string[]> {
