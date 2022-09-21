@@ -6,7 +6,7 @@ Run the extension from the command palette and it will list the scripts from pac
 
 Upon selecting an item, it will focus the last used terminal and send the text `npm run ${selected script name}` which will of course result in that script being run.
 
-\!\[demo\]\(images/demo.gif\)
+\!\[demo\]\(https://raw.githubusercontent.com/elliotjharper/vscode-npm-script-run/main/images/demo.gif\)
 
 ## Requirements
 
