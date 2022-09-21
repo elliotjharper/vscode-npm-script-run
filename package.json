@@ -3,7 +3,11 @@
     "displayName": "elltg-npm-script-run",
     "description": "Run NPM scripts from the command palette",
     "publisher": "elltg",
-    "version": "1.0.0",
+    "version": "1.0.1",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/elliotjharper/vscode-npm-script-run.git"
+    },
     "engines": {
         "vscode": "^1.71.0"
     },
@@ -11,14 +15,14 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:elltg-hello-world.helloWorld"
+        "onCommand:elltg-npm-script-run.runNpmScript"
     ],
     "main": "./dist/extension.js",
     "contributes": {
         "commands": [
             {
-                "command": "elltg-hello-world.helloWorld",
-                "title": "Hello World"
+                "command": "elltg-npm-script-run.runNpmScript",
+                "title": "Run NPM Script From /package.json"
             }
         ]
     },
