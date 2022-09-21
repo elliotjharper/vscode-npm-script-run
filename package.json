@@ -3,7 +3,7 @@
     "displayName": "Command Palette NPM Script Runner",
     "description": "Run NPM scripts from the command palette",
     "publisher": "elltg",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "repository": {
         "type": "git",
         "url": "https://github.com/elliotjharper/vscode-npm-script-run.git"
