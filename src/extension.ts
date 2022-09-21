@@ -16,9 +16,9 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            vscode.window.showInformationMessage(
-                `Running selected npm script: [${selectedNpmScript}]`
-            );
+            // vscode.window.showInformationMessage(
+            //     `Running selected npm script: [${selectedNpmScript}]`
+            // );
 
             const activeTerminal = vscode.window.activeTerminal;
             if (activeTerminal) {
