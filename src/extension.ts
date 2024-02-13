@@ -1,36 +1,54 @@
 import * as vscode from 'vscode';
 import { readNpmScripts } from './read-npm-scripts';
 
+function openScriptInTerminal(
+    terminal: vscode.Terminal | undefined,
+    selectedNpmScript: string
+): void {
+    if (terminal) {
+        terminal.show();
+        terminal.sendText(`npm run ${selectedNpmScript}`);
+    } else {
+        vscode.window.showInformationMessage('No active terminal. Exiting...');
+    }
+}
+
+async function readNpmScriptsMain(openNewTerminal: boolean): Promise<void> {
+    const namedNpmScripts = await readNpmScripts();
+
+    const selectedNpmScript = await vscode.window.showQuickPick(namedNpmScripts);
+
+    if (!selectedNpmScript) {
+        vscode.window.showInformationMessage('You did not select an npm script. Exiting...');
+        return;
+    }
+
+    let terminal: vscode.Terminal | undefined;
+    if (openNewTerminal) {
+        terminal = vscode.window.createTerminal();
+    } else {
+        terminal = vscode.window.activeTerminal;
+    }
+
+    openScriptInTerminal(terminal, selectedNpmScript);
+}
+
 export function activate(context: vscode.ExtensionContext) {
-    let disposable = vscode.commands.registerCommand(
-        'elltg-npm-script-run.runNpmScript',
+    let runNpmScriptCurrentTerminal = vscode.commands.registerCommand(
+        'elltg-npm-script-run.runNpmScriptCurrentTerminal',
         async () => {
-            const namedNpmScripts = await readNpmScripts();
-
-            const selectedNpmScript = await vscode.window.showQuickPick(namedNpmScripts);
-
-            if (!selectedNpmScript) {
-                vscode.window.showInformationMessage(
-                    'You did not select an npm script. Exiting...'
-                );
-                return;
-            }
-
-            // vscode.window.showInformationMessage(
-            //     `Running selected npm script: [${selectedNpmScript}]`
-            // );
-
-            const activeTerminal = vscode.window.activeTerminal;
-            if (activeTerminal) {
-                activeTerminal.show();
-                activeTerminal.sendText(`npm run ${selectedNpmScript}`);
-            } else {
-                vscode.window.showInformationMessage('No active terminal. Exiting...');
-            }
+            await readNpmScriptsMain(false);
         }
     );
+    context.subscriptions.push(runNpmScriptCurrentTerminal);
 
-    context.subscriptions.push(disposable);
+    let runNpmScriptNewTerminal = vscode.commands.registerCommand(
+        'elltg-npm-script-run.runNpmScriptNewTerminal',
+        async () => {
+            await readNpmScriptsMain(true);
+        }
+    );
+    context.subscriptions.push(runNpmScriptNewTerminal);
 }
 
 export function deactivate() {}
