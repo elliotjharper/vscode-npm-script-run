@@ -46,7 +46,7 @@ export async function initPackageJsonScriptsList() {
     allNpmScriptPromise = null;
 }
 
-// TODO cache quick pick item list
+let quickPickItemList: NpmScriptQuickPickItem[] | null = null;
 
 /**
  * the function to get quick pick item list based on packageJsonScriptsList
@@ -56,6 +56,10 @@ export async function getQuickPickItemList(): Promise<NpmScriptQuickPickItem[]> 
         await allNpmScriptPromise;
     }
 
+    if (quickPickItemList) {
+        return quickPickItemList;
+    }
+
     const flattenedScriptList = packageJsonScriptsList.flatMap((packageJson) =>
         packageJson.scriptList.map((script) => ({
             ...script,
@@ -63,23 +67,62 @@ export async function getQuickPickItemList(): Promise<NpmScriptQuickPickItem[]> 
         }))
     );
 
-    const quickPickItemList = flattenedScriptList.map((item) => {
-        const relativeRunPath = item.packageJsonPath
-            .replace(workspaceRootUri?.fsPath + '\\', '')
-            .replace(/package\.json$/, '')
-            .replace(/\\$/, '')
-            .replace(/\\/g, '/');
+    quickPickItemList = flattenedScriptList
+        .map((item) => {
+            const relativeRunPath = item.packageJsonPath
+                .replace(workspaceRootUri?.fsPath + '\\', '')
+                .replace(/package\.json$/, '')
+                .replace(/\\$/, '')
+                .replace(/\\/g, '/');
 
-        const label = `${item.name}${relativeRunPath ? ` - ${relativeRunPath}` : ''}`;
+            const label = `${item.name}${relativeRunPath ? ` - ${relativeRunPath}` : ''}`;
 
-        return {
-            label,
-            detail: item.command,
-            ...item,
-        };
-    });
+            return {
+                label,
+                detail: item.command,
+                ...item,
+            };
+        })
+        // sort by label
+        .sort((a, b) => a.label.localeCompare(b.label));
 
     return quickPickItemList;
+}
+
+/**
+ * set one quick pick item to first
+ * @param item the quick pick item to set to first
+ */
+export async function setQuickPickItemToFirst(item: NpmScriptQuickPickItem) {
+    if (!quickPickItemList) {
+        throw new Error('quickPickItemList is not initialized');
+    }
+
+    const LAST_USED_TEXT = '(last used) ';
+
+    // set the item to first and update the description
+    quickPickItemList = quickPickItemList
+        .map((quickPickItem, index) => {
+            return {
+                ...quickPickItem,
+                description:
+                    index === 0 ? quickPickItem.description?.replace(LAST_USED_TEXT, '') : '',
+            };
+        })
+        .sort((a, _) => {
+            const isMatch = a.packageJsonPath === item.packageJsonPath && a.name === item.name;
+
+            return isMatch ? -1 : 0;
+        })
+        .map((quickPickItem, index) => {
+            return {
+                ...quickPickItem,
+                description:
+                    index === 0
+                        ? `${LAST_USED_TEXT}${quickPickItem.description}`
+                        : quickPickItem.description,
+            };
+        });
 }
 
 // TODO watch package.json file changes and update packageJsonScriptsList

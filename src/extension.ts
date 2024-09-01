@@ -1,5 +1,9 @@
 import * as vscode from 'vscode';
-import { getQuickPickItemList, initPackageJsonScriptsList } from './stores/npm-scripts-store';
+import {
+    getQuickPickItemList,
+    initPackageJsonScriptsList,
+    setQuickPickItemToFirst,
+} from './stores/npm-scripts-store';
 
 function openScriptInTerminal(
     terminal: vscode.Terminal | undefined,
@@ -17,6 +21,7 @@ function openScriptInTerminal(
 }
 
 async function readNpmScriptsMain(openNewTerminal: boolean): Promise<void> {
+    // TODO show "Loading..." before getting the quickPickItemList
     const quickPickItemList = await getQuickPickItemList();
 
     const selectedNpmScript = await vscode.window.showQuickPick(quickPickItemList);
@@ -25,6 +30,7 @@ async function readNpmScriptsMain(openNewTerminal: boolean): Promise<void> {
         vscode.window.showInformationMessage('You did not select an npm script. Exiting...');
         return;
     }
+    setQuickPickItemToFirst(selectedNpmScript);
 
     let terminal: vscode.Terminal | undefined;
     if (openNewTerminal) {
