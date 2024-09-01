@@ -46,7 +46,11 @@ export async function initPackageJsonScriptsList() {
     allNpmScriptPromise = null;
 }
 
+/** the quick pick item list only sorted by package.json path */
 let quickPickItemList: NpmScriptQuickPickItem[] | null = null;
+
+/** the quick pick item list shown in quick pick */
+let shownQuickPickItemList: NpmScriptQuickPickItem[] | null = null;
 
 /**
  * the function to get quick pick item list based on packageJsonScriptsList
@@ -56,8 +60,8 @@ export async function getQuickPickItemList(): Promise<NpmScriptQuickPickItem[]> 
         await allNpmScriptPromise;
     }
 
-    if (quickPickItemList) {
-        return quickPickItemList;
+    if (shownQuickPickItemList) {
+        return shownQuickPickItemList;
     }
 
     const flattenedScriptList = packageJsonScriptsList.flatMap((packageJson) =>
@@ -84,9 +88,15 @@ export async function getQuickPickItemList(): Promise<NpmScriptQuickPickItem[]> 
             };
         })
         // sort by label
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => {
+            const packageJsonPathCompare = a.packageJsonPath.localeCompare(b.packageJsonPath);
 
-    return quickPickItemList;
+            return packageJsonPathCompare;
+        });
+
+    shownQuickPickItemList = quickPickItemList;
+
+    return shownQuickPickItemList;
 }
 
 /**
