@@ -150,7 +150,9 @@ export async function setQuickPickItemToFirst(
                 ...quickPickItem,
                 description:
                     index === 0
-                        ? `${descriptionPrefix} ${quickPickItem.description}`
+                        ? quickPickItem.description
+                            ? `${descriptionPrefix} ${quickPickItem.description}`
+                            : descriptionPrefix
                         : quickPickItem.description,
             };
         });
