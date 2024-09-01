@@ -3,6 +3,7 @@ import {
     getQuickPickItemList,
     initPackageJsonScriptsList,
     setQuickPickItemToFirst,
+    watchPackageJsonChanges,
 } from './stores/npm-scripts-store';
 
 function openScriptInTerminal(
@@ -44,6 +45,7 @@ async function readNpmScriptsMain(openNewTerminal: boolean): Promise<void> {
 
 export async function activate(context: vscode.ExtensionContext) {
     initPackageJsonScriptsList();
+    watchPackageJsonChanges();
 
     let runNpmScriptCurrentTerminal = vscode.commands.registerCommand(
         'elltg-npm-script-run.runNpmScriptCurrentTerminal',

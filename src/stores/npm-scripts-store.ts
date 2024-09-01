@@ -10,6 +10,7 @@ import {
     workspaceRootUri,
 } from '../read-npm-scripts';
 import * as vscode from 'vscode';
+import { debounce } from '../utils/debounce';
 
 /**
  * promise that indicates whether init package.json scripts list is done
@@ -21,10 +22,24 @@ let allNpmScriptPromise: Promise<void> | null = null;
  */
 let packageJsonScriptsList: PackageJsonScriptsList = [];
 
+// XXX optimize the performance by only update single package.json script list
+/**
+ * start to watch package.json changes, and update package.json scripts list when package.json changes
+ */
+export function watchPackageJsonChanges() {
+    const packageJsonWatcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(workspaceRootUri || '', '**/package.json')
+    );
+
+    packageJsonWatcher.onDidChange(initPackageJsonScriptsList);
+    packageJsonWatcher.onDidCreate(initPackageJsonScriptsList);
+    packageJsonWatcher.onDidDelete(initPackageJsonScriptsList);
+}
+
 /**
  * init package.json scripts list
  */
-export async function initPackageJsonScriptsList() {
+export const initPackageJsonScriptsList = debounce(async function () {
     let resolveAllNpmScriptPromise = () => {};
     allNpmScriptPromise = new Promise((resolve) => {
         resolveAllNpmScriptPromise = resolve;
@@ -44,7 +59,8 @@ export async function initPackageJsonScriptsList() {
 
     resolveAllNpmScriptPromise();
     allNpmScriptPromise = null;
-}
+    getQuickPickItemList(true);
+});
 
 /** the quick pick item list only sorted by package.json path */
 let quickPickItemList: NpmScriptQuickPickItem[] | null = null;
@@ -54,13 +70,14 @@ let shownQuickPickItemList: NpmScriptQuickPickItem[] | null = null;
 
 /**
  * the function to get quick pick item list based on packageJsonScriptsList
+ * @param isInit whether to init the quick pick item list
  */
-export async function getQuickPickItemList(): Promise<NpmScriptQuickPickItem[]> {
-    if (allNpmScriptPromise) {
+export async function getQuickPickItemList(isInit = false): Promise<NpmScriptQuickPickItem[]> {
+    if (allNpmScriptPromise && !isInit) {
         await allNpmScriptPromise;
     }
 
-    if (shownQuickPickItemList) {
+    if (shownQuickPickItemList && !isInit) {
         return shownQuickPickItemList;
     }
 
@@ -138,5 +155,3 @@ export async function setQuickPickItemToFirst(
             };
         });
 }
-
-// TODO watch package.json file changes and update packageJsonScriptsList
