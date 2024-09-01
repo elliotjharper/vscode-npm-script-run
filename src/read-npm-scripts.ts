@@ -43,18 +43,24 @@ export async function getNpmScriptFromPackageJson(packageJsonPath: string): Prom
     const packageJsonTextDocument = await vscode.workspace.openTextDocument(packageJsonPath);
     const packageJsonTextContents = packageJsonTextDocument.getText();
 
-    const packageJson = JSON.parse(packageJsonTextContents);
+    const packageJsonScripts = (() => {
+        try {
+            return JSON.parse(packageJsonTextContents).scripts;
+        } catch (e) {
+            return {};
+        }
+    })();
 
-    const packageScripts = Object.entries(packageJson.scripts).map(([name, command]) => ({
+    const packageScriptList = Object.entries(packageJsonScripts).map(([name, command]) => ({
         name,
         command: typeof command === 'string' ? command : '',
     }));
 
-    if (packageScripts.length === 0) {
+    if (packageScriptList.length === 0) {
         return [];
     }
 
-    return packageScripts;
+    return packageScriptList;
 }
 
 async function readPackageJson(): Promise<IPackageFileWithScripts> {
