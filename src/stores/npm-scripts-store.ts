@@ -99,27 +99,31 @@ export async function getQuickPickItemList(): Promise<NpmScriptQuickPickItem[]> 
     return shownQuickPickItemList;
 }
 
+type SetQuickPickItemToFirstConfig = {
+    /** description prefix of the item to set to first */
+    descriptionPrefix: string;
+};
 /**
  * set one quick pick item to first
  * @param item the quick pick item to set to first
+ * @param config the config to set
  */
-export async function setQuickPickItemToFirst(item: NpmScriptQuickPickItem) {
-    if (!quickPickItemList) {
+export async function setQuickPickItemToFirst(
+    item: NpmScriptQuickPickItem,
+    config?: SetQuickPickItemToFirstConfig
+) {
+    if (!shownQuickPickItemList || !quickPickItemList) {
         throw new Error('quickPickItemList is not initialized');
     }
 
-    const LAST_USED_TEXT = '(last used) ';
+    const { descriptionPrefix }: SetQuickPickItemToFirstConfig = {
+        descriptionPrefix: '(last used)',
+        ...config,
+    };
 
     // set the item to first and update the description
-    quickPickItemList = quickPickItemList
-        .map((quickPickItem, index) => {
-            return {
-                ...quickPickItem,
-                description:
-                    index === 0 ? quickPickItem.description?.replace(LAST_USED_TEXT, '') : '',
-            };
-        })
-        .sort((a, _) => {
+    shownQuickPickItemList = quickPickItemList
+        .toSorted((a, _) => {
             const isMatch = a.packageJsonPath === item.packageJsonPath && a.name === item.name;
 
             return isMatch ? -1 : 0;
@@ -129,7 +133,7 @@ export async function setQuickPickItemToFirst(item: NpmScriptQuickPickItem) {
                 ...quickPickItem,
                 description:
                     index === 0
-                        ? `${LAST_USED_TEXT}${quickPickItem.description}`
+                        ? `${descriptionPrefix} ${quickPickItem.description}`
                         : quickPickItem.description,
             };
         });
