@@ -104,7 +104,7 @@ export async function getQuickPickItemList(isInit = false): Promise<NpmScriptQui
                 ...item,
             };
         })
-        // sort by label
+        // sort by package.json path
         .sort((a, b) => {
             const packageJsonPathCompare = a.packageJsonPath.localeCompare(b.packageJsonPath);
 
