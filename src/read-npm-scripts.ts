@@ -7,13 +7,14 @@ interface IPackageFileWithScripts {
     scripts: Record<string, string>;
 }
 
+export const workspaceRootUri = vscode.workspace.workspaceFolders?.[0]?.uri;
+
 // XXX Add support for passing in uri parameters
 /**
  * get all package.json file path in the workspace
  * @returns list of package.json file path
  */
 export async function getPackageJsonPathList(): Promise<string[]> {
-    const workspaceRootUri = vscode.workspace.workspaceFolders?.[0]?.uri;
     if (!workspaceRootUri) {
         throw new Error('folder needed!');
     }
@@ -34,7 +35,7 @@ export async function getPackageJsonPathList(): Promise<string[]> {
  * @param packageJsonPath package.json file path
  * @returns list of npm scripts
  */
-export async function getNpmScriptFromPackageJson(packageJsonPath: string) {
+export async function getNpmScriptFromPackageJson(packageJsonPath: string): Promise<NpmScript[]> {
     if (!packageJsonPath) {
         return [];
     }
@@ -46,7 +47,7 @@ export async function getNpmScriptFromPackageJson(packageJsonPath: string) {
 
     const packageScripts = Object.entries(packageJson.scripts).map(([name, command]) => ({
         name,
-        command,
+        command: typeof command === 'string' ? command : '',
     }));
 
     if (packageScripts.length === 0) {
