@@ -1,34 +1,87 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 
 interface IPackageFileWithScripts {
     scripts: Record<string, string>;
 }
 
-async function readPackageJson(): Promise<IPackageFileWithScripts> {
-    const workspaceRootUri = vscode.workspace.workspaceFolders?.[0]?.uri;
-    if (!workspaceRootUri) {
-        throw new Error('folder needed!');
-    }
+interface IPackageJsonInfo {
+    uri: vscode.Uri;
+    dirPath: string;
+    content: IPackageFileWithScripts;
+}
 
-    const workspacePackageJsonUri = vscode.Uri.joinPath(workspaceRootUri, './package.json');
-
-    const packageJsonTextDocument = await vscode.workspace.openTextDocument(
-        workspacePackageJsonUri
+async function findPackageJsonFiles(): Promise<vscode.Uri[]> {
+    // Search for package.json files but exclude common dependency/build directories
+    const packageJsonFiles = await vscode.workspace.findFiles(
+        '**/package.json',
+        '{**/node_modules/**,**/dist/**,**/build/**,**/out/**,**/.git/**}'
     );
+    return packageJsonFiles;
+}
 
+async function readPackageJson(packageJsonUri: vscode.Uri): Promise<IPackageFileWithScripts> {
+    const packageJsonTextDocument = await vscode.workspace.openTextDocument(packageJsonUri);
     const packageJsonTextContents = packageJsonTextDocument.getText();
-
     return JSON.parse(packageJsonTextContents);
 }
 
-export async function readNpmScripts(): Promise<string[]> {
+async function selectPackageJson(): Promise<IPackageJsonInfo | null> {
+    const packageJsonFiles = await findPackageJsonFiles();
+
+    if (packageJsonFiles.length === 0) {
+        throw new Error('No package.json files found in workspace');
+    }
+
+    if (packageJsonFiles.length === 1) {
+        const uri = packageJsonFiles[0];
+        const content = await readPackageJson(uri);
+        const dirPath = path.dirname(uri.fsPath);
+        return { uri, dirPath, content };
+    }
+
+    // Multiple package.json files found, let user choose
+    const items = packageJsonFiles.map((uri) => {
+        const relativePath = vscode.workspace.asRelativePath(uri);
+        return {
+            label: path.dirname(relativePath),
+            description: relativePath,
+            uri: uri,
+        };
+    });
+
+    const selected = await vscode.window.showQuickPick(items, {
+        placeHolder: 'Multiple package.json files found. Select one:',
+    });
+
+    if (!selected) {
+        return null;
+    }
+
+    const content = await readPackageJson(selected.uri);
+    const dirPath = path.dirname(selected.uri.fsPath);
+    return { uri: selected.uri, dirPath, content };
+}
+
+export async function readNpmScripts(): Promise<{
+    scripts: string[];
+    packageJsonPath: string;
+} | null> {
     try {
-        const packageJson = await readPackageJson();
+        const packageJsonInfo = await selectPackageJson();
 
-        const packageScripts = Object.keys(packageJson.scripts).sort();
+        if (!packageJsonInfo) {
+            return null; // User cancelled selection
+        }
 
-        return packageScripts;
+        const packageScripts = Object.keys(packageJsonInfo.content.scripts || {}).sort();
+
+        return {
+            scripts: packageScripts,
+            packageJsonPath: packageJsonInfo.dirPath,
+        };
     } catch (err) {
-        return [`No package.json file found! Error: ${err}`];
+        vscode.window.showErrorMessage(`Error reading package.json: ${err}`);
+        return null;
     }
 }

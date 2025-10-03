@@ -3,10 +3,12 @@ import { readNpmScripts } from './read-npm-scripts';
 
 function openScriptInTerminal(
     terminal: vscode.Terminal | undefined,
-    selectedNpmScript: string
+    selectedNpmScript: string,
+    packageJsonPath: string
 ): void {
     if (terminal) {
         terminal.show();
+        terminal.sendText(`cd "${packageJsonPath}"`);
         terminal.sendText(`npm run ${selectedNpmScript}`);
     } else {
         vscode.window.showInformationMessage('No active terminal. Exiting...');
@@ -14,7 +16,19 @@ function openScriptInTerminal(
 }
 
 async function readNpmScriptsMain(openNewTerminal: boolean): Promise<void> {
-    const namedNpmScripts = await readNpmScripts();
+    const result = await readNpmScripts();
+
+    if (!result) {
+        vscode.window.showInformationMessage('No package.json selected or found. Exiting...');
+        return;
+    }
+
+    const { scripts: namedNpmScripts, packageJsonPath } = result;
+
+    if (namedNpmScripts.length === 0) {
+        vscode.window.showInformationMessage('No npm scripts found in package.json. Exiting...');
+        return;
+    }
 
     const selectedNpmScript = await vscode.window.showQuickPick(namedNpmScripts);
 
@@ -30,7 +44,7 @@ async function readNpmScriptsMain(openNewTerminal: boolean): Promise<void> {
         terminal = vscode.window.activeTerminal;
     }
 
-    openScriptInTerminal(terminal, selectedNpmScript);
+    openScriptInTerminal(terminal, selectedNpmScript, packageJsonPath);
 }
 
 export function activate(context: vscode.ExtensionContext) {
