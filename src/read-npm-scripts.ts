@@ -32,19 +32,38 @@ async function selectPackageJson(): Promise<IPackageJsonInfo | null> {
     if (packageJsonFiles.length === 0) {
         throw new Error('No package.json files found in workspace');
     }
-
     if (packageJsonFiles.length === 1) {
         const uri = packageJsonFiles[0];
         const content = await readPackageJson(uri);
         const dirPath = path.dirname(uri.fsPath);
         return { uri, dirPath, content };
-    }
+    } // Multiple package.json files found, let user choose
+    // Sort so root package.json appears first
+    const sortedPackageJsonFiles = packageJsonFiles.sort((a, b) => {
+        const aRelativePath = vscode.workspace.asRelativePath(a);
+        const bRelativePath = vscode.workspace.asRelativePath(b);
 
-    // Multiple package.json files found, let user choose
-    const items = packageJsonFiles.map((uri) => {
+        // Root package.json should come first
+        if (aRelativePath === 'package.json') {
+            return -1;
+        }
+        if (bRelativePath === 'package.json') {
+            return 1;
+        }
+
+        // Sort others alphabetically
+        return aRelativePath.localeCompare(bRelativePath);
+    });
+
+    const items = sortedPackageJsonFiles.map((uri) => {
         const relativePath = vscode.workspace.asRelativePath(uri);
+        const dirPath = path.dirname(relativePath);
+
+        // Display root as "Root (/)" instead of "."
+        const displayLabel = dirPath === '.' ? 'Workspace Root' : dirPath;
+
         return {
-            label: path.dirname(relativePath),
+            label: displayLabel,
             description: relativePath,
             uri: uri,
         };
